@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: micro-1-deployment
+  labels:
+    app: micro-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: micro-1
+  template:
+    metadata:
+      labels:
+        app: micro-1
+    spec:
+      containers:
+      - name: micro-1
+        image: localhost:5000/micro-1:latest  # Imagen desde el registro local
+        ports:
+        - containerPort: 8080
+        env:
+        - name: OTEL_EXPORTER_JAEGER_ENDPOINT
+          value: "http://jaeger-collector-service:14268/api/traces"
+        - name: OTEL_SERVICE_NAME
+          value: "micro-1"
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"

@@ -1,0 +1,20 @@
+# Etapa de compilación
+FROM golang:1.20 AS builder
+
+WORKDIR /app
+
+# Copiar archivos de Go y descargar dependencias
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod tidy
+
+COPY . .
+
+# Compilar el binario
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o micro-2 .
+
+# Imagen final
+FROM ubuntu:22.04
+WORKDIR /root/
+COPY --from=builder /app/micro-2 .
+CMD ["./micro-2"]
