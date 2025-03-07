@@ -16,12 +16,13 @@ spec:
     spec:
       containers:
       - name: micro-1
-        image: localhost:5000/micro-1:latest  # Imagen desde el registro local
+        image: localhost:5000/micro-1:latest # Imagen desde el registro local
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8080
+        - containerPort: 3000
         env:
         - name: OTEL_EXPORTER_JAEGER_ENDPOINT
-          value: "http://jaeger-collector-service:14268/api/traces"
+          value: "http://jaeger:14268/api/traces"
         - name: OTEL_SERVICE_NAME
           value: "micro-1"
         resources:
@@ -31,3 +32,15 @@ spec:
           requests:
             memory: "256Mi"
             cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: micro-1
+spec:
+  selector:
+    app: micro-1
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: ClusterIP

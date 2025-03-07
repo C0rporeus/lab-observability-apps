@@ -4,20 +4,22 @@
     "description": "API Gateway para el laboratorio de observabilidad",
     "main": "dist/index.js",
     "scripts": {
-      "start": "tsc && node dist/index.js",
-      "dev": "ts-node src/index.ts"
+        "start": "tsc && node dist/index.js",
+        "dev": "ts-node src/index.ts",
+        "build": "tsc"
     },
     "dependencies": {
-      "@opentelemetry/api": "^1.0.0",
-      "@opentelemetry/sdk-trace-node": "^1.0.0",
-      "@opentelemetry/sdk-trace-base": "^1.0.0",
-      "@opentelemetry/auto-instrumentations-node": "^0.33.0",
-      "@opentelemetry/exporter-trace-otlp-grpc": "^0.33.0"
+        "@opentelemetry/api": "^1.0.0",
+        "@opentelemetry/auto-instrumentations-node": "^0.33.0",
+        "@opentelemetry/exporter-trace-otlp-grpc": "^0.33.0",
+        "@opentelemetry/exporter-trace-otlp-http": "^0.57.2",
+        "@opentelemetry/sdk-trace-base": "^1.0.0",
+        "@opentelemetry/sdk-trace-node": "^1.0.0",
+        "winston": "^3.17.0"
     },
     "devDependencies": {
-      "typescript": "^4.5.4",
-      "@types/node": "^16.11.7",
-      "ts-node": "^10.4.0"
+        "@types/node": "^16.11.7",
+        "ts-node": "^10.4.0",
+        "typescript": "^4.5.4"
     }
-  }
-  
+}

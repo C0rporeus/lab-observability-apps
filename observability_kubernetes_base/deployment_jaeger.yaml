@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  labels:
+    app: jaeger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:latest
+        ports:
+        - containerPort: 16686 # Puerto UI
+          name: ui
+        - containerPort: 14268 # Puerto HTTP Collector
+          name: http-collector
+        - containerPort: 14250 # Puerto gRPC Collector
+          name: grpc-collector
+        - containerPort: 4317 # Puerto OTLP gRPC
+          name: otlp-grpc
+        - containerPort: 4318 # Puerto OTLP HTTP
+          name: otlp-http
+        env:
+        - name: COLLECTOR_ZIPKIN_HOST_PORT
+          value: ":9411"
+        - name: MEMORY_MAX_TRACES
+          value: "50000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  labels:
+    app: jaeger
+spec:
+  ports:
+  - port: 16686
+    name: ui
+    protocol: TCP
+    targetPort: ui
+  - port: 14268
+    name: http-collector
+    protocol: TCP
+    targetPort: http-collector
+  - port: 14250
+    name: grpc-collector
+    protocol: TCP
+    targetPort: grpc-collector
+  - port: 4317
+    name: otlp-grpc
+    protocol: TCP
+    targetPort: otlp-grpc
+  - port: 4318
+    name: otlp-http
+    protocol: TCP
+    targetPort: otlp-http
+  selector:
+    app: jaeger
+  type: NodePort

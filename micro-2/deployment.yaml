@@ -17,22 +17,30 @@ spec:
       containers:
       - name: micro-2
         image: localhost:5000/micro-2:latest
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+          requests:
+            cpu: "250m"
+            memory: "128Mi"
         ports:
-        - containerPort: 8080  # Cambia al puerto que expone la aplicación, si es diferente
+        - containerPort: 8080 # Cambia al puerto que expone la aplicación, si es diferente
         env:
         - name: OTEL_EXPORTER_JAEGER_ENDPOINT
-          value: "http://simplest-collector:14268/api/traces"
+          value: "http://jaeger:14268/api/traces"
         - name: SERVICE_NAME
           value: "micro-2"
         readinessProbe:
           httpGet:
             path: /
-            port: 8080  # Cambia al puerto correcto si es necesario
+            port: 8080 # Cambia al puerto correcto si es necesario
           initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /
-            port: 8080  # Cambia al puerto correcto si es necesario
+            port: 8080 # Cambia al puerto correcto si es necesario
           initialDelaySeconds: 5
           periodSeconds: 10

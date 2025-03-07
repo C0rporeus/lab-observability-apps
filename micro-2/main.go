@@ -8,15 +8,20 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
 )
 
 func initTracer() (*sdktrace.TracerProvider, error) {
-	// Configurar exportador Jaeger
-	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint("http://simplest-collector:14268/api/traces")))
+	// Configurar exportador OTLP gRPC
+	exporter, err := otlptracegrpc.New(
+		context.Background(),
+		otlptracegrpc.WithEndpoint("otel-collector:4317"),
+		otlptracegrpc.WithDialOption(grpc.WithInsecure()),
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+  labels:
+    app: opentelemetry-collector
+data:
+  collector.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      batch:
+        timeout: 10s
+      memory_limiter:
+        check_interval: 5s
+        limit_mib: 1000
+
+    exporters:
+      debug:
+        verbosity: detailed
+      otlp:
+        endpoint: jaeger:14250
+        tls:
+          insecure: true
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch, memory_limiter]
+          exporters: [otlp, debug]
+        logs:
+          receivers: [otlp]
+          processors: [batch, memory_limiter]
+          exporters: [debug] 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  labels:
+    app: opentelemetry-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opentelemetry-collector
+  template:
+    metadata:
+      labels:
+        app: opentelemetry-collector
+    spec:
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector:latest
+        args:
+        - --config=/conf/collector.yaml
+        volumeMounts:
+        - name: otel-collector-config-vol
+          mountPath: /conf
+        ports:
+        - containerPort: 4317
+          name: otlp-grpc
+        - containerPort: 4318
+          name: otlp-http
+        - containerPort: 8888
+          name: metrics
+      volumes:
+      - name: otel-collector-config-vol
+        configMap:
+          name: otel-collector-conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels:
+    app: opentelemetry-collector
+spec:
+  ports:
+  - port: 4317
+    name: otlp-grpc
+    targetPort: otlp-grpc
+  - port: 4318
+    name: otlp-http
+    targetPort: otlp-http
+  - port: 8888
+    name: metrics
+    targetPort: metrics
+  selector:
+    app: opentelemetry-collector
