@@ -13,14 +13,15 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func initTracer() (*sdktrace.TracerProvider, error) {
 	// Configurar exportador OTLP gRPC
 	exporter, err := otlptracegrpc.New(
 		context.Background(),
-		otlptracegrpc.WithEndpoint("otel-collector:4317"),
-		otlptracegrpc.WithDialOption(grpc.WithInsecure()),
+		otlptracegrpc.WithEndpoint("http://otel-collector:4317"),
+		otlptracegrpc.WithDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 	)
 	if err != nil {
 		return nil, err
@@ -57,6 +58,11 @@ func main() {
 }
 
 func simulateEvent(ctx context.Context, tracer trace.Tracer) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Recovered in simulateEvent: %v", r)
+		}
+	}()
 	_, span := tracer.Start(ctx, "simulateEvent")
 	defer span.End()
 

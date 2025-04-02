@@ -4,6 +4,8 @@ metadata:
   name: jaeger
   labels:
     app: jaeger
+  annotations:
+    linkerd.io/inject: enabled
 spec:
   replicas: 1
   selector:
@@ -28,6 +30,13 @@ spec:
           name: otlp-grpc
         - containerPort: 4318 # Puerto OTLP HTTP
           name: otlp-http
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
         env:
         - name: COLLECTOR_ZIPKIN_HOST_PORT
           value: ":9411"

@@ -4,6 +4,8 @@ metadata:
   name: loki
   labels:
     app: loki
+  annotations:
+    linkerd.io/inject: enabled
 spec:
   replicas: 1
   selector:

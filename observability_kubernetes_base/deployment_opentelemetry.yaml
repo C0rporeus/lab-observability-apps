@@ -24,17 +24,15 @@ data:
     exporters:
       debug:
         verbosity: detailed
-      otlp:
-        endpoint: jaeger:14250
-        tls:
-          insecure: true
+      zipkin:
+        endpoint: "http://jaeger:9411/api/v2/spans"
 
     service:
       pipelines:
         traces:
           receivers: [otlp]
           processors: [batch, memory_limiter]
-          exporters: [otlp, debug]
+          exporters: [zipkin, debug]
         logs:
           receivers: [otlp]
           processors: [batch, memory_limiter]
@@ -46,6 +44,8 @@ metadata:
   name: otel-collector
   labels:
     app: opentelemetry-collector
+  annotations:
+    linkerd.io/inject: enabled
 spec:
   replicas: 1
   selector:
@@ -61,14 +61,21 @@ spec:
         image: otel/opentelemetry-collector:latest
         args:
         - --config=/conf/collector.yaml
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
         volumeMounts:
         - name: otel-collector-config-vol
           mountPath: /conf
         ports:
         - containerPort: 4317
-          name: otlp-grpc
+          name: grpc
         - containerPort: 4318
-          name: otlp-http
+          name: http
         - containerPort: 8888
           name: metrics
       volumes:
@@ -85,11 +92,11 @@ metadata:
 spec:
   ports:
   - port: 4317
-    name: otlp-grpc
-    targetPort: otlp-grpc
+    name: grpc
+    targetPort: grpc
   - port: 4318
-    name: otlp-http
-    targetPort: otlp-http
+    name: http
+    targetPort: http
   - port: 8888
     name: metrics
     targetPort: metrics

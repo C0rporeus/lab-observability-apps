@@ -4,6 +4,9 @@ metadata:
   name: micro-1-deployment
   labels:
     app: micro-1
+  annotations:
+    linkerd.io/inject: enabled
+    config.linkerd.io/opaque-ports: "4317"
 spec:
   replicas: 1
   selector:
@@ -19,7 +22,7 @@ spec:
         image: localhost:5000/micro-1:latest # Imagen desde el registro local
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 3000
+        - containerPort: 50051
         env:
         - name: OTEL_EXPORTER_JAEGER_ENDPOINT
           value: "http://jaeger:14268/api/traces"
@@ -41,6 +44,8 @@ spec:
   selector:
     app: micro-1
   ports:
-  - port: 3000
-    targetPort: 3000
+  - name: "grpc-collector"
+    port: 50051
+    targetPort: 50051
+    protocol: TCP
   type: ClusterIP
