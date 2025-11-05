@@ -46,6 +46,10 @@ data:
             regex: ([^:]+)(?::\d+)?;(\d+)
             replacement: $1:$2
             target_label: __address__
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: replace
+            target_label: app
+            regex: (.+)
 ---
 apiVersion: apps/v1
 kind: Deployment

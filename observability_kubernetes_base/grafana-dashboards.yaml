@@ -124,7 +124,7 @@ data:
           "pluginVersion": "10.0.0",
           "targets": [
             {
-              "expr": "up{exported_job=\"api-gateway\"} OR on() vector(1)",
+              "expr": "(count(up{job=\"microservices\", app=\"micro-1\"}) > 0) * 1 OR (count(otel_http_requests_total{exported_job=\"api-gateway\", endpoint=~\"/weather/micro1.*\"}) > 0) * 1 OR on() vector(0)",
               "refId": "A",
               "legendFormat": "Micro-1"
             }
@@ -156,7 +156,7 @@ data:
           },
           "gridPos": {
             "h": 4,
-            "w": 6,
+            "w": 4,
             "x": 12,
             "y": 0
           },
@@ -176,12 +176,64 @@ data:
           "pluginVersion": "10.0.0",
           "targets": [
             {
-              "expr": "count(rate(otel_http_requests_total{exported_job=\"api-gateway\"}[5m]) > 0) OR on() vector(0)",
+              "expr": "(count(up{job=\"microservices\", app=\"api-gateway\"}) > 0) * 1 OR (count(otel_http_requests_total{exported_job=\"api-gateway\"}) > 0) * 1 OR on() vector(0)",
               "refId": "A",
               "legendFormat": "API Gateway Active"
             }
           ],
           "title": "API Gateway Status",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 16,
+            "y": 0
+          },
+          "id": 10,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "expr": "(count(up{job=\"microservices\", app=\"micro-2\"}) > 0) * 1 OR (count(otel_http_requests_total{exported_job=\"api-gateway\", endpoint=~\"/weather/micro2.*\"}) > 0) * 1 OR on() vector(0)",
+              "refId": "A",
+              "legendFormat": "Micro-2"
+            }
+          ],
+          "title": "Micro-2 Status",
           "type": "gauge"
         },
         {
