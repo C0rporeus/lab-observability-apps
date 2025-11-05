@@ -13,6 +13,13 @@ data:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'otel-collector'
+              scrape_interval: 10s
+              static_configs:
+                - targets: ['0.0.0.0:8888']
 
     processors:
       batch:
@@ -20,23 +27,46 @@ data:
       memory_limiter:
         check_interval: 5s
         limit_mib: 1000
+      resource:
+        attributes:
+          - key: service.name
+            from_attribute: service.name
+            action: upsert
+          - key: app
+            from_attribute: service.name
+            action: upsert
 
     exporters:
       debug:
         verbosity: detailed
-      zipkin:
-        endpoint: "http://jaeger:9411/api/v2/spans"
+      otlp/jaeger:
+        endpoint: "http://jaeger:4317"
+        tls:
+          insecure: true
+      otlphttp:
+        endpoint: "http://loki:3100/otlp"
+        tls:
+          insecure: true
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+        namespace: "otel"
+        send_timestamps: true
+        enable_open_metrics: true
 
     service:
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [batch, memory_limiter]
-          exporters: [zipkin, debug]
+          processors: [batch, memory_limiter, resource]
+          exporters: [otlp/jaeger, debug]
         logs:
           receivers: [otlp]
-          processors: [batch, memory_limiter]
-          exporters: [debug] 
+          processors: [batch, memory_limiter, resource]
+          exporters: [otlphttp, debug]
+        metrics:
+          receivers: [otlp, prometheus]
+          processors: [batch, memory_limiter, resource]
+          exporters: [prometheus, debug] 
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -55,10 +85,13 @@ spec:
     metadata:
       labels:
         app: opentelemetry-collector
+      annotations:
+        # Configurar Linkerd para que no intercepte el tráfico a Jaeger y Loki (gRPC y HTTP)
+        config.linkerd.io/skip-outbound-ports: "4317,4318,16686,3100"
     spec:
       containers:
       - name: otel-collector
-        image: otel/opentelemetry-collector:latest
+        image: otel/opentelemetry-collector-contrib:latest
         args:
         - --config=/conf/collector.yaml
         resources:
@@ -78,6 +111,8 @@ spec:
           name: http
         - containerPort: 8888
           name: metrics
+        - containerPort: 8889
+          name: prometheus
       volumes:
       - name: otel-collector-config-vol
         configMap:
@@ -100,5 +135,8 @@ spec:
   - port: 8888
     name: metrics
     targetPort: metrics
+  - port: 8889
+    name: prometheus
+    targetPort: prometheus
   selector:
     app: opentelemetry-collector

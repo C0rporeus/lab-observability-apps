@@ -1,41 +1,65 @@
-use log::{info, Level};
+use log::info;
+use micro_1::config;
+use micro_1::observability;
+use micro_1::GreeterServiceImpl;
 use micro_1::helloworld::greeter_server::GreeterServer;
-use micro_1::GreeterService;
-use opentelemetry::trace::{Span, Tracer};
-use opentelemetry::KeyValue;
-use opentelemetry_appender_log::OpenTelemetryLogBridge;
-use opentelemetry_sdk::logs::LoggerProvider;
-use opentelemetry_sdk::Resource;
-use opentelemetry_semantic_conventions::resource::SERVICE_NAME;
-use opentelemetry_otlp::{self as otlp, WithExportConfig};
+use opentelemetry::trace::Tracer;
 use tonic::transport::Server;
+use tracing_subscriber::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Configure OTLP exporter
-    let grpc_exporter = otlp::new_exporter()
-        .tonic()
-        .with_endpoint("http://otel-collector:4317")
-        .build_log_exporter()?;
+    // Initialize observability (tracing provider) FIRST
+    observability::init_observability()?;
+    
+    // Initialize logging system FIRST to get logger provider (for OpenTelemetry logs)
+    let logger_provider = match config::init_logging() {
+        Ok(lp) => {
+            println!("LoggerProvider initialized successfully");
+            lp
+        },
+        Err(e) => {
+            eprintln!("Warning: Failed to initialize logging: {}, continuing without log exporter", e);
+            opentelemetry_sdk::logs::LoggerProvider::builder().build()
+        }
+    };
+    
+    // Set up tracing subscriber with OpenTelemetry bridge for logs
+    let telemetry_layer = tracing_opentelemetry::OpenTelemetryLayer::default();
+    
+    // Add OpenTelemetry log appender layer to bridge tracing logs to OpenTelemetry logs
+    let otel_log_layer = opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge::new(&logger_provider);
+    
+    match tracing_subscriber::Registry::default()
+        .with(telemetry_layer)
+        .with(otel_log_layer)
+        .with(tracing_subscriber::fmt::layer()
+            .with_ansi(false)
+            .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
+            .json()
+            .with_writer(std::io::stdout))
+        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .try_init() {
+        Ok(_) => println!("Tracing subscriber initialized successfully with OpenTelemetry layer and log bridge"),
+        Err(_) => {
+            // If it fails, try without setting global logger
+            println!("Warning: Could not initialize tracing subscriber, but continuing...");
+        }
+    }
 
-    let logger_provider = LoggerProvider::builder()
-        .with_resource(Resource::new(vec![KeyValue::new(SERVICE_NAME, "micro-1")]))
-        .with_simple_exporter(grpc_exporter)
-        .build();
-
-    let otel_log_appender = OpenTelemetryLogBridge::new(&logger_provider);
-    log::set_boxed_logger(Box::new(otel_log_appender))?;
-    log::set_max_level(Level::Info.to_level_filter());
-
-    // Initialize tracer
     let tracer = opentelemetry::global::tracer("micro-1");
     let _span = tracer.start("server-startup");
 
     info!("Starting gRPC server...");
 
-    // Initialize gRPC server
     let addr = "[::0]:50051".parse()?;
-    let greeter = GreeterService::default();
+    let greeter = match GreeterServiceImpl::new().await {
+        Ok(g) => g,
+        Err(e) => {
+            eprintln!("Failed to initialize GreeterServiceImpl: {}", e);
+            return Err(format!("Failed to initialize service: {}", e).into());
+        }
+    };
 
     info!("gRPC server listening on {}", addr);
 

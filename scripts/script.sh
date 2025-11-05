@@ -1,7 +1,14 @@
 #!/bin/bash
 set -e
 
-eval $(minikube docker-env)
+# Configurar Docker según el entorno
+if command -v minikube > /dev/null 2>&1 && minikube status > /dev/null 2>&1; then
+    echo "📦 Configurando Docker para minikube..."
+    eval $(minikube docker-env)
+else
+    echo "📦 Usando Docker Desktop (o Docker local)"
+    # No necesitamos configuración adicional para Docker Desktop
+fi
 
 echo "Construyendo imagen de micro-1 (Rust)..."
 

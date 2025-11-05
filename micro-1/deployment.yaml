@@ -9,6 +9,11 @@ metadata:
     config.linkerd.io/opaque-ports: "4317"
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: micro-1
@@ -16,25 +21,55 @@ spec:
     metadata:
       labels:
         app: micro-1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
       - name: micro-1
-        image: localhost:5000/micro-1:latest # Imagen desde el registro local
-        imagePullPolicy: IfNotPresent
+        image: micro-1:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 50051
         env:
-        - name: OTEL_EXPORTER_JAEGER_ENDPOINT
-          value: "http://jaeger:14268/api/traces"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://otel-collector:4317"
         - name: OTEL_SERVICE_NAME
           value: "micro-1"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.name=micro-1,application=lab-observability"
+        - name: DB_HOST
+          value: "postgres"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-credentials
+              key: POSTGRES_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-credentials
+              key: POSTGRES_PASSWORD
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-credentials
+              key: POSTGRES_DB
+        - name: WEATHER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: weather-api-key
+              key: WEATHER_API_KEY
         resources:
           limits:
+            memory: "1Gi"
+            cpu: "1000m"
+          requests:
             memory: "512Mi"
             cpu: "500m"
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
 ---
 apiVersion: v1
 kind: Service
@@ -44,8 +79,44 @@ spec:
   selector:
     app: micro-1
   ports:
-  - name: "grpc-collector"
+  - name: "grpc"
     port: 50051
     targetPort: 50051
     protocol: TCP
   type: ClusterIP
+  sessionAffinity: None
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: micro-1-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: micro-1
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: micro-1-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: micro-1-deployment
+  minReplicas: 1
+  maxReplicas: 1
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

@@ -1,17 +1,7 @@
 #!/bin/bash
 set -e
 
-# Función para eliminar inyecciones de Linkerd
-remove_linkerd_injections() {
-    echo "Eliminando inyecciones de Linkerd de los pods existentes..."
-    kubectl delete deployment --all -n default || true
-    
-    # Esperar a que los pods se eliminen
-    while kubectl get pods -n default 2>/dev/null | grep -q Running; do
-        echo "Esperando que se eliminen los pods..."
-        sleep 5
-    done
-}
+cd "$(dirname "$0")/.."
 
 # Función para generar certificados de Linkerd válidos
 generate_linkerd_certs() {
@@ -34,7 +24,6 @@ generate_linkerd_certs() {
 # Función para limpiar Linkerd
 clean_linkerd() {
     echo "Limpiando instalación previa de Linkerd..."
-    remove_linkerd_injections
     
     # Intentar desinstalar Linkerd
     linkerd uninstall | kubectl delete -f - || true
@@ -120,26 +109,51 @@ linkerd check
 
 # Limpiar recursos existentes
 echo "Limpiando recursos previos..."
-kubectl delete deployments,services,configmaps -l app=jaeger --ignore-not-found
-kubectl delete deployments,services,configmaps -l app=loki --ignore-not-found
 kubectl delete deployments,services,configmaps -l app=opentelemetry-collector --ignore-not-found
 kubectl delete deployments,services,configmaps -l app=grafana --ignore-not-found
+kubectl delete deployments,services,configmaps -l app=prometheus --ignore-not-found
+kubectl delete deployments,services,configmaps -l app=alertmanager --ignore-not-found
+kubectl delete deployments,services,configmaps -l app=tempo --ignore-not-found
+kubectl delete daemonset promtail --ignore-not-found
+kubectl delete horizontalpodautoscalers --all --ignore-not-found
+kubectl delete poddisruptionbudgets --all --ignore-not-found
 
 # Esperar a que los recursos se limpien
 sleep 10
 
 # Desplegar componentes de observabilidad
 echo "Desplegando componentes de observabilidad..."
-deploy_with_linkerd "observability_kubernetes_base/deployment_jaeger.yaml" "jaeger"
-deploy_with_linkerd "observability_kubernetes_base/deployment_loki.yaml" "loki"
+deploy_with_linkerd "observability_kubernetes_base/deployment_tempo.yaml" "tempo"
 deploy_with_linkerd "observability_kubernetes_base/deployment_opentelemetry.yaml" "otel-collector"
+deploy_with_linkerd "observability_kubernetes_base/deployment_prometheus.yaml" "prometheus"
+kubectl apply -f "observability_kubernetes_base/prometheus-rules.yaml"
+deploy_with_linkerd "observability_kubernetes_base/deployment_alertmanager.yaml" "alertmanager"
 deploy_with_linkerd "observability_kubernetes_base/deployment_grafana.yaml" "grafana"
+kubectl apply -f "observability_kubernetes_base/grafana-dashboards.yaml"
 
 # Esperar a que los componentes estén listos con reintentos
-wait_for_pod_ready "app=jaeger" 120 || exit 1
-wait_for_pod_ready "app=loki" 120 || exit 1
+wait_for_pod_ready "app=tempo" 120 || exit 1
 wait_for_pod_ready "app=opentelemetry-collector" 120 || exit 1
+wait_for_pod_ready "app=prometheus" 120 || exit 1
+wait_for_pod_ready "app=alertmanager" 120 || exit 1
 wait_for_pod_ready "app=grafana" 120 || exit 1
+
+# Crear secret de Weather API Key desde archivo .env (si existe)
+echo "Creando secret de Weather API Key..."
+if [ -f ".env" ]; then
+    ./scripts/create-secrets.sh
+else
+    echo "⚠️  No se encontró archivo .env para Weather API Key."
+    echo "💡 Para configurar la API key, crea un archivo .env basado en env.example"
+    echo "⚠️  Los microservicios fallarán sin una API key válida de OpenWeatherMap"
+fi
+
+# Desplegar PostgreSQL
+echo "Desplegando PostgreSQL..."
+kubectl apply -f "postgres-deployment.yaml"
+
+# Esperar a que PostgreSQL esté listo
+wait_for_pod_ready "app=postgres" 120 || exit 1
 
 # Desplegar microservicios
 echo "Desplegando microservicios..."
@@ -153,6 +167,34 @@ wait_for_pod_ready "app=micro-2" 120 || exit 1
 wait_for_pod_ready "app=api-gateway" 120 || exit 1
 
 echo "Laboratorio desplegado correctamente!"
-echo "URLs de acceso:"
-echo "Grafana: $(minikube service grafana --url)"
-echo "Jaeger: $(minikube service jaeger --url)"
+echo ""
+echo "🌐 URLs de acceso:"
+
+# Detectar si estamos usando minikube o Docker Desktop
+if command -v minikube > /dev/null 2>&1 && minikube status > /dev/null 2>&1; then
+    # Usando minikube
+    echo "Grafana: $(minikube service grafana --url 2>/dev/null || echo 'http://localhost:3000')"
+    echo "Tempo: $(minikube service tempo --url 2>/dev/null || echo 'http://localhost:3200')"
+    echo "Prometheus: $(minikube service prometheus --url 2>/dev/null || echo 'http://localhost:9090')"
+    echo "AlertManager: $(minikube service alertmanager --url 2>/dev/null || echo 'http://localhost:9093')"
+    echo ""
+    echo "💡 Para acceder a los servicios, ejecuta:"
+    echo "   minikube service grafana"
+    echo "   minikube service tempo"
+    echo "   minikube service prometheus"
+    echo "   minikube service alertmanager"
+else
+    # Usando Docker Desktop Kubernetes o otro entorno
+    echo "   Grafana: http://localhost:3000"
+    echo "   Tempo: http://localhost:3200"
+    echo "   Prometheus: http://localhost:9090"
+    echo "   AlertManager: http://localhost:9093"
+    echo "   API Gateway: http://localhost:8080"
+    echo ""
+    echo "💡 Para acceder a los servicios, ejecuta en terminales separadas:"
+    echo "   kubectl port-forward svc/grafana 3000:3000"
+    echo "   kubectl port-forward svc/tempo 3200:3200"
+    echo "   kubectl port-forward svc/prometheus 9090:9090"
+    echo "   kubectl port-forward svc/alertmanager 9093:9093"
+    echo "   kubectl port-forward svc/api-gateway 8080:3000"
+fi

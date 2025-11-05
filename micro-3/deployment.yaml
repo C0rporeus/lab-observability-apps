@@ -3,7 +3,12 @@ kind: Deployment
 metadata:
   name: api-gateway
 spec:
-  replicas: 1
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: api-gateway
@@ -11,23 +16,27 @@ spec:
     metadata:
       labels:
         app: api-gateway
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
       - name: api-gateway
-        image: localhost:5000/api-gateway:latest
-        imagePullPolicy: IfNotPresent
-        resources:
-          limits:
-            cpu: "500m"
-            memory: "256Mi"
-          requests:
-            cpu: "250m"
-            memory: "128Mi"
+        image: api-gateway:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 3000
         env:
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
           value: "http://otel-collector:4317"
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
 ---
 apiVersion: v1
 kind: Service
@@ -39,4 +48,41 @@ spec:
   ports:
   - port: 3000
     targetPort: 3000
+    name: http
   type: ClusterIP
+  sessionAffinity: None
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-gateway-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-gateway
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

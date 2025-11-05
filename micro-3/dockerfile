@@ -13,8 +13,9 @@ FROM node:18-slim
 
 WORKDIR /app
 COPY --from=builder /app/dist /app
+COPY --from=builder /app/src/micro1.proto /app/
+COPY --from=builder /app/src/micro.proto /app/
 COPY package*.json ./
-COPY src/micro.proto /app
 RUN npm install --production
 
 EXPOSE 8080

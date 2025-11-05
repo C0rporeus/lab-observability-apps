@@ -34,15 +34,22 @@ spec:
           value: "true"
         - name: GF_AUTH_ANONYMOUS_ORG_ROLE
           value: "Admin"
+        - name: GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS
+          value: "grafana-clock-panel,grafana-simple-json-datasource,grafana-kubernetes-app,marcusolsson-json-datasource,grafana-piechart-panel"
         - name: GF_INSTALL_PLUGINS
-          value: "grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel,grafana-kubernetes-app,grafana-tempo-datasource"
+          value: "grafana-clock-panel,grafana-simple-json-datasource,grafana-kubernetes-app,grafana-piechart-panel,marcusolsson-json-datasource"
         volumeMounts:
         - name: grafana-datasources
           mountPath: /etc/grafana/provisioning/datasources
+        - name: grafana-dashboards
+          mountPath: /etc/grafana/provisioning/dashboards
       volumes:
       - name: grafana-datasources
         configMap:
           name: grafana-datasources
+      - name: grafana-dashboards
+        configMap:
+          name: grafana-dashboards
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -52,15 +59,24 @@ data:
   datasources.yaml: |
     apiVersion: 1
     datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+        uid: prometheus
+        jsonData:
+          httpMethod: POST
       - name: Jaeger
         type: jaeger
         access: proxy
-        url: http://jaeger:16686/api/traces
-        isDefault: true
+        url: http://jaeger:16686
+        uid: jaeger
       - name: Loki
         type: loki
         access: proxy
         url: http://loki:3100
+        uid: loki
         jsonData:
           derivedFields:
             - name: "trace_id"

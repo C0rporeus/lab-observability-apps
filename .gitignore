@@ -1,0 +1,47 @@
+# Archivos de entorno con credenciales sensibles
+.env
+.env.local
+.env.*.local
+# Permitir env.example (no contiene credenciales reales)
+!env.example
+
+# Certificados y llaves privadas
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
+ca.crt
+ca.key
+issuer.crt
+issuer.key
+
+# Logs
+*.log
+logs/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Archivos temporales
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Build artifacts (si aplica)
+target/
+dist/
+build/
+*.o
+*.so
+*.dylib
+

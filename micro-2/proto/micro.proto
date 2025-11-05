@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package micro;
+
+option go_package = "micro-2/proto";
+
+service MicroService {
+  rpc Ping(PingRequest) returns (PingResponse);
+  rpc GetWeather(WeatherRequest) returns (WeatherResponse);
+  rpc SaveWeatherData(WeatherDataRequest) returns (WeatherDataResponse);
+  rpc GetWeatherHistory(WeatherHistoryRequest) returns (WeatherHistoryResponse);
+}
+
+message PingRequest {}
+
+message PingResponse {
+  string message = 1;
+}
+
+message WeatherRequest {
+  string city = 1;
+}
+
+message WeatherResponse {
+  string city = 1;
+  double temperature = 2;
+  string condition = 3;
+  int32 humidity = 4;
+  double wind_speed = 5;
+  string source = 6;
+}
+
+message WeatherDataRequest {
+  string city = 1;
+  double temperature = 2;
+  string condition = 3;
+  int32 humidity = 4;
+  double wind_speed = 5;
+}
+
+message WeatherDataResponse {
+  int32 id = 1;
+  string message = 2;
+}
+
+message WeatherHistoryRequest {
+  string city = 1;
+  int32 limit = 2;
+}
+
+message WeatherHistoryResponse {
+  repeated WeatherRecord records = 1;
+  string city = 2;
+  int32 count = 3;
+}
+
+message WeatherRecord {
+  int32 id = 1;
+  string city = 2;
+  double temperature = 3;
+  string condition = 4;
+  int32 humidity = 5;
+  double wind_speed = 6;
+  string timestamp = 7;
+}

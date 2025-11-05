@@ -1,0 +1,642 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'Observability Stack'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        options:
+          path: /etc/grafana/provisioning/dashboards
+  
+  observability-overview.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "expr": "up{job=\"otel-collector\"}",
+              "refId": "A",
+              "legendFormat": "Collector Status"
+            }
+          ],
+          "title": "Collector Status",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 0
+          },
+          "id": 2,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "expr": "up{exported_job=\"api-gateway\"} OR on() vector(1)",
+              "refId": "A",
+              "legendFormat": "Micro-1"
+            }
+          ],
+          "title": "Micro-1 Status",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 0
+          },
+          "id": 3,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "expr": "count(rate(otel_http_requests_total{exported_job=\"api-gateway\"}[5m]) > 0) OR on() vector(0)",
+              "refId": "A",
+              "legendFormat": "API Gateway Active"
+            }
+          ],
+          "title": "API Gateway Status",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 4
+          },
+          "id": 4,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "expr": "rate(otel_http_requests_total[5m])",
+              "refId": "A"
+            }
+          ],
+          "title": "Request Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "s"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 4
+          },
+          "id": 5,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, rate(otel_http_request_duration_seconds_bucket[5m]))",
+              "refId": "A"
+            }
+          ],
+          "title": "Response Time (p95)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "jaeger",
+            "uid": "jaeger"
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 24,
+            "x": 0,
+            "y": 12
+          },
+          "id": 6,
+          "options": {
+            "columns": [
+              {
+                "text": "Trace ID",
+                "value": "traceID"
+              },
+              {
+                "text": "Service",
+                "value": "serviceName"
+              },
+              {
+                "text": "Operation",
+                "value": "operationName"
+              },
+              {
+                "text": "Duration",
+                "value": "duration"
+              }
+            ],
+            "showTime": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Duration"
+              }
+            ]
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "jaeger",
+                "uid": "jaeger"
+              },
+              "queryType": "search",
+              "refId": "A",
+              "service": "api-gateway"
+            }
+          ],
+          "title": "Distributed Traces (Jaeger)",
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 24
+          },
+          "id": 7,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": false
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "{service_name=\"api-gateway\"}",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ],
+          "title": "API Gateway Logs",
+          "type": "logs"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 32
+          },
+          "id": 8,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": false
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "{service_name=\"micro-1\"}",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ],
+          "title": "Micro-1 Logs",
+          "type": "logs"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 32
+          },
+          "id": 9,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": false
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "{service_name=\"micro-2\"}",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ],
+          "title": "Micro-2 Logs",
+          "type": "logs"
+        },
+        {
+          "datasource": {
+            "type": "jaeger",
+            "uid": "jaeger"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 40
+          },
+          "id": 11,
+          "options": {
+            "columns": [
+              {
+                "text": "Trace ID",
+                "value": "traceID"
+              },
+              {
+                "text": "Service",
+                "value": "serviceName"
+              },
+              {
+                "text": "Operation",
+                "value": "operationName"
+              },
+              {
+                "text": "Duration",
+                "value": "duration"
+              }
+            ],
+            "showTime": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Duration"
+              }
+            ]
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "jaeger",
+                "uid": "jaeger"
+              },
+              "queryType": "search",
+              "refId": "A",
+              "service": "micro-1"
+            }
+          ],
+          "title": "Micro-1 Traces",
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "jaeger",
+            "uid": "jaeger"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 40
+          },
+          "id": 12,
+          "options": {
+            "columns": [
+              {
+                "text": "Trace ID",
+                "value": "traceID"
+              },
+              {
+                "text": "Service",
+                "value": "serviceName"
+              },
+              {
+                "text": "Operation",
+                "value": "operationName"
+              },
+              {
+                "text": "Duration",
+                "value": "duration"
+              }
+            ],
+            "showTime": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Duration"
+              }
+            ]
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "jaeger",
+                "uid": "jaeger"
+              },
+              "queryType": "search",
+              "refId": "A",
+              "service": "micro-2"
+            }
+          ],
+          "title": "Micro-2 Traces",
+          "type": "table"
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 38,
+      "style": "dark",
+      "tags": [
+        "observability"
+      ],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-15m",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "Observability Stack - Overview",
+      "uid": "observability-overview",
+      "version": 1,
+      "weekStart": ""
+    }
+
