@@ -15,6 +15,8 @@ spec:
     metadata:
       labels:
         app: grafana
+      annotations:
+        linkerd.io/inject: enabled
     spec:
       containers:
       - name: grafana

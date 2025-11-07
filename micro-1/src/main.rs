@@ -9,10 +9,8 @@ use tracing_subscriber::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize observability (tracing provider) FIRST
     observability::init_observability()?;
     
-    // Initialize logging system FIRST to get logger provider (for OpenTelemetry logs)
     let logger_provider = match config::init_logging() {
         Ok(lp) => {
             println!("LoggerProvider initialized successfully");
@@ -24,10 +22,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     
-    // Set up tracing subscriber with OpenTelemetry bridge for logs
     let telemetry_layer = tracing_opentelemetry::OpenTelemetryLayer::default();
     
-    // Add OpenTelemetry log appender layer to bridge tracing logs to OpenTelemetry logs
     let otel_log_layer = opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge::new(&logger_provider);
     
     match tracing_subscriber::Registry::default()
@@ -42,7 +38,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .try_init() {
         Ok(_) => println!("Tracing subscriber initialized successfully with OpenTelemetry layer and log bridge"),
         Err(_) => {
-            // If it fails, try without setting global logger
             println!("Warning: Could not initialize tracing subscriber, but continuing...");
         }
     }

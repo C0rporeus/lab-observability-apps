@@ -50,7 +50,6 @@ pub struct GreeterServiceImpl {
 
 impl GreeterServiceImpl {
     pub async fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        // Initialize database
         let db_host = std::env::var("DB_HOST").unwrap_or_else(|_| "postgres".to_string());
         let db_port = std::env::var("DB_PORT").unwrap_or_else(|_| "5432".to_string()).parse::<u16>().unwrap_or(5432);
         let db_user = std::env::var("DB_USER").unwrap_or_else(|_| "postgres".to_string());
@@ -59,7 +58,6 @@ impl GreeterServiceImpl {
         
         let database = Database::new(&db_host, db_port, &db_user, &db_password, &db_name).await?;
         
-        // Initialize weather service - la API key debe estar definida en variables de entorno
         let api_key = std::env::var("WEATHER_API_KEY")
             .map_err(|_| "WEATHER_API_KEY debe estar definida en variables de entorno")?;
         let weather_service = WeatherService::new(api_key);
@@ -124,11 +122,9 @@ impl Greeter for GreeterServiceImpl {
         let extractor = GrpcMetadataExtractor { metadata };
         let parent_context = global::get_text_map_propagator(|propagator| propagator.extract(&extractor));
         
-        // Create OpenTelemetry span using parent context
         let tracer = global::tracer("micro-1");
         let mut span = tracer.start_with_context("micro-1: get_hello_world", &parent_context);
         
-        // Add RPC and service attributes
         span.set_attribute(KeyValue::new("rpc.system", "grpc"));
         span.set_attribute(KeyValue::new("rpc.service", "helloworld.Greeter"));
         span.set_attribute(KeyValue::new("rpc.method", "GetHelloWorld"));

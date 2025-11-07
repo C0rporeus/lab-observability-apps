@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: alertmanager-config
+  name: alertmanager-rules
   labels:
     app: alertmanager
 data:
@@ -18,7 +18,7 @@ data:
     # Rutas de alertas
     route:
       receiver: 'default-receiver'
-      group_by: ['alertname', 'service']
+      group_by: ['alertname', 'cluster', 'service']
       group_wait: 10s
       group_interval: 10s
       repeat_interval: 12h
@@ -58,11 +58,6 @@ data:
         group_wait: 10s
         group_interval: 1m
         repeat_interval: 2h
-      
-      # Alertas de advertencia por defecto
-      - match:
-          severity: warning
-        receiver: 'warning-alerts'
     
     # Receivers (destinos de las alertas)
     receivers:
@@ -102,15 +97,6 @@ data:
       - url: 'http://localhost:9093/api/v1/alerts'
         send_resolved: true
     
-    - name: 'warning-alerts'
-      webhook_configs:
-      - url: 'http://localhost:9093/api/v1/alerts'
-        send_resolved: true
-        http_config:
-          basic_auth:
-            username: 'admin'
-            password: 'admin'
-    
     # Inhibición de alertas (evitar spam)
     inhibit_rules:
     # Si un servicio está caído, no alertar por alta latencia o tasa de error
@@ -119,7 +105,7 @@ data:
         alertname: 'ServiceDown'
       target_match:
         severity: 'warning'
-      equal: ['service']
+      equal: ['service', 'cluster']
     
     # Si el collector está caído, inhibir alertas de métricas
     - source_match:
@@ -127,72 +113,4 @@ data:
       target_match_re:
         alertname: '.*'
       equal: ['cluster']
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: alertmanager
-  labels:
-    app: alertmanager
-  annotations:
-    linkerd.io/inject: enabled
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: alertmanager
-  template:
-    metadata:
-      labels:
-        app: alertmanager
-    spec:
-      containers:
-      - name: alertmanager
-        image: prom/alertmanager:latest
-        ports:
-        - containerPort: 9093
-          name: http
-        args:
-        - --config.file=/etc/alertmanager/alertmanager.yml
-        - --storage.path=/alertmanager
-        - --web.external-url=http://localhost:9093
-        resources:
-          requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
-            cpu: 200m
-            memory: 256Mi
-        volumeMounts:
-        - name: alertmanager-config-volume
-          mountPath: /etc/alertmanager/
-        - name: alertmanager-templates-volume
-          mountPath: /etc/alertmanager/templates
-        - name: alertmanager-storage-volume
-          mountPath: /alertmanager
-      volumes:
-      - name: alertmanager-config-volume
-        configMap:
-          defaultMode: 420
-          name: alertmanager-config
-      - name: alertmanager-templates-volume
-        configMap:
-          defaultMode: 420
-          name: alertmanager-templates
-      - name: alertmanager-storage-volume
-        emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: alertmanager
-  labels:
-    app: alertmanager
-spec:
-  ports:
-  - port: 9093
-    targetPort: 9093
-    name: http
-  selector:
-    app: alertmanager
-  type: NodePort
+

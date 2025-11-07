@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-gateway
+  annotations:
+    linkerd.io/inject: enabled
 spec:
   replicas: 2
   strategy:
@@ -17,6 +19,7 @@ spec:
       labels:
         app: api-gateway
       annotations:
+        linkerd.io/inject: enabled
         prometheus.io/scrape: "true"
         prometheus.io/port: "3000"
         prometheus.io/path: "/metrics"

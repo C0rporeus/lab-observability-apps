@@ -8,7 +8,6 @@ cd "$(dirname "$0")/.."
 
 ACTION=${1:-start}
 
-# Función para matar procesos de port-forward
 kill_port_forward() {
     local port=$1
     local pids=$(lsof -ti :$port 2>/dev/null || true)
@@ -19,13 +18,11 @@ kill_port_forward() {
     fi
 }
 
-# Función para iniciar port-forward
 start_port_forward() {
     local service=$1
     local local_port=$2
     local remote_port=$3
     
-    # Verificar si el puerto ya está en uso
     if lsof -i :$local_port > /dev/null 2>&1; then
         echo "⚠️  Puerto $local_port ya está en uso. Matando proceso anterior..."
         kill_port_forward $local_port
@@ -35,7 +32,6 @@ start_port_forward() {
     kubectl port-forward svc/$service $local_port:$remote_port > /dev/null 2>&1 &
     sleep 1
     
-    # Verificar que se inició correctamente
     if lsof -i :$local_port > /dev/null 2>&1; then
         echo "✅ Port-forward de $service iniciado en puerto $local_port"
     else
@@ -55,6 +51,15 @@ case $ACTION in
         start_port_forward "api-gateway" 8080 3000
         start_port_forward "otel-collector" 8889 8889
         
+        echo "🚀 Iniciando port-forward: Linkerd Viz (8084:8084)"
+        kubectl -n linkerd-viz port-forward svc/web 8084:8084 > /dev/null 2>&1 &
+        sleep 1
+        if lsof -i :8084 > /dev/null 2>&1; then
+            echo "✅ Port-forward de Linkerd Viz iniciado en puerto 8084"
+        else
+            echo "❌ Error al iniciar port-forward de Linkerd Viz"
+        fi
+        
         echo ""
         echo "✅ Todos los port-forwards iniciados"
         echo ""
@@ -65,6 +70,7 @@ case $ACTION in
         echo "   AlertManager: http://localhost:9093"
         echo "   API Gateway: http://localhost:8080"
         echo "   OpenTelemetry Collector: http://localhost:8889"
+        echo "   Linkerd Viz: http://localhost:8084"
         echo ""
         echo "💡 Para detener todos los port-forwards: ./scripts/port-forward.sh stop"
         ;;
@@ -78,8 +84,8 @@ case $ACTION in
         kill_port_forward 9093
         kill_port_forward 8080
         kill_port_forward 8889
+        kill_port_forward 8084
         
-        # También matar cualquier proceso kubectl port-forward restante
         pkill -f "kubectl port-forward" 2>/dev/null || true
         sleep 1
         
@@ -89,8 +95,8 @@ case $ACTION in
     status)
         echo "📊 Estado de los port-forwards:"
         echo ""
-        ports=(3000 16686 9090 9093 8080 8889)
-        services=("grafana" "jaeger" "prometheus" "alertmanager" "api-gateway" "otel-collector")
+        ports=(3000 16686 9090 9093 8080 8889 8084)
+        services=("grafana" "jaeger" "prometheus" "alertmanager" "api-gateway" "otel-collector" "linkerd-viz")
         
         for i in "${!ports[@]}"; do
             port=${ports[$i]}
@@ -122,4 +128,3 @@ case $ACTION in
         exit 1
         ;;
 esac
-

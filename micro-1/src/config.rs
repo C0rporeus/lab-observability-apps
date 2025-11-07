@@ -5,13 +5,9 @@ use opentelemetry_semantic_conventions::resource::SERVICE_NAME;
 use opentelemetry_otlp::WithExportConfig;
 
 pub fn init_logging() -> Result<LoggerProvider, Box<dyn std::error::Error>> {
-    // Try to create OTLP exporter for logs
-    // Note: opentelemetry_otlp 0.25.0 might not have full HTTP log exporter support
-    // We'll use tonic (gRPC) which should work
     let endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
         .unwrap_or_else(|_| "http://otel-collector:4317".to_string());
     
-    // Extract host:port from endpoint URL
     let endpoint_url = endpoint.trim_start_matches("http://").trim_start_matches("https://");
     let endpoint_clean = endpoint_url.split('/').next().unwrap_or("otel-collector:4317");
     

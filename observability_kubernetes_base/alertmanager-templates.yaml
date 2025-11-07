@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-templates
+  labels:
+    app: alertmanager
+data:
+  # Template 1: Alerta de alta tasa de error en microservicios
+  high_error_rate.tmpl: |
+    {{ define "high_error_rate_alert" }}
+    {{- if eq .Status "firing" }}
+    🚨 **ALERTA CRÍTICA: Alta Tasa de Errores**
+    
+    **Servicio:** {{ .Labels.service }}
+    **Endpoint:** {{ .Labels.endpoint }}
+    **Tasa de Error:** {{ .Value }}
+    **Tiempo:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+    
+    **Descripción:**
+    El servicio {{ .Labels.service }} está experimentando una tasa de error de {{ .Value }}, 
+    lo cual excede el umbral del 10% configurado.
+    
+    **Acciones Recomendadas:**
+    1. Revisar los logs del servicio: `kubectl logs -l app={{ .Labels.service }}`
+    2. Verificar métricas en Grafana: http://localhost:3000
+    3. Revisar trazas en Jaeger: http://localhost:16686
+    4. Verificar el estado del servicio: `kubectl get pods -l app={{ .Labels.service }}`
+    
+    **Enlaces Útiles:**
+    - Grafana Dashboard: http://localhost:3000/d/observability-overview
+    - Jaeger Traces: http://localhost:16686/search?service={{ .Labels.service }}
+    {{- else }}
+    ✅ **ALERTA RESUELTA: Alta Tasa de Errores**
+    
+    **Servicio:** {{ .Labels.service }}
+    **Resuelto:** {{ .EndsAt.Format "2006-01-02 15:04:05" }}
+    
+    La tasa de error del servicio {{ .Labels.service }} ha vuelto a niveles normales.
+    {{- end }}
+    {{ end }}
+  
+  # Template 2: Alerta de alta latencia en microservicios
+  high_latency.tmpl: |
+    {{ define "high_latency_alert" }}
+    {{- if eq .Status "firing" }}
+    ⚠️ **ALERTA DE ADVERTENCIA: Alta Latencia Detectada**
+    
+    **Servicio:** {{ .Labels.service }}
+    **Endpoint:** {{ .Labels.endpoint }}
+    **Latencia P95:** {{ printf "%.3f" .Value }}s
+    **Umbral:** 2.0s
+    **Tiempo:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+    
+    **Descripción:**
+    El percentil 95 de latencia para el servicio {{ .Labels.service }} es de {{ printf "%.3f" .Value }}s, 
+    lo cual excede el umbral de 2.0s configurado. Esto puede indicar problemas de rendimiento.
+    
+    **Métricas Relacionadas:**
+    - Latencia P50: Revisar en Grafana
+    - Latencia P99: Revisar en Grafana
+    - Tasa de Requests: Revisar en Grafana
+    
+    **Acciones Recomendadas:**
+    1. Revisar el panel de latencia en Grafana: http://localhost:3000/d/observability-overview
+    2. Analizar trazas lentas en Jaeger filtrando por duración > {{ .Value }}s
+    3. Verificar recursos del pod: `kubectl top pod -l app={{ .Labels.service }}`
+    4. Revisar métricas de Linkerd: `linkerd viz stat deployment/{{ .Labels.service }}`
+    
+    **Enlaces Útiles:**
+    - Grafana Dashboard: http://localhost:3000/d/observability-overview
+    - Linkerd Viz: http://localhost:8084
+    {{- else }}
+    ✅ **ALERTA RESUELTA: Alta Latencia**
+    
+    **Servicio:** {{ .Labels.service }}
+    **Resuelto:** {{ .EndsAt.Format "2006-01-02 15:04:05" }}
+    
+    La latencia del servicio {{ .Labels.service }} ha vuelto a niveles normales.
+    {{- end }}
+    {{ end }}
+
