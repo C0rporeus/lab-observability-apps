@@ -20,6 +20,9 @@
 10. [Configuraciones Avanzadas](#10-configuraciones-avanzadas)
 11. [Diagramas y Visualizaciones Sugeridas](#11-diagramas-y-visualizaciones-sugeridas)
 
+**📚 Documentos Relacionados**:
+- [Guía Completa de Instrumentación](./INSTRUMENTACION.md): Configuración detallada del SDK, métricas personalizadas, logs y flujo de trazas
+
 ---
 
 ## 1. Visión General del Sistema
@@ -1596,6 +1599,11 @@ annotations:
 - [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/)
 - [Grafana](https://grafana.com/docs/grafana/latest/)
 - [Linkerd](https://linkerd.io/)
+
+### 13.4 Documentación del Proyecto
+- [Guía de Instrumentación](./INSTRUMENTACION.md): Configuración del SDK, métricas personalizadas, logs y flujo de trazas
+- [Flujo OpenTelemetry → Tempo](./FLUJO_OTEL_TEMPO.md): Detalles técnicos de comunicación
+- [Operaciones](./OPERACIONES.md): Comandos y guías operacionales
 
 ---
 
